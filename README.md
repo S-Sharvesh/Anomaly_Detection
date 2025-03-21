@@ -128,15 +128,14 @@ For instance:
 - Use **Autoencoders** for feature-based anomaly detection in structured data.
 - Use **PCA or One-Class SVM** for quick, traditional anomaly detection on small datasets.
 
+## Output
+![image](https://github.com/user-attachments/assets/779c0130-1765-45c5-9920-2c5d6eddd899)
+
 ## Conclusion
 
 This repository provides a strong foundation for deep learning-based anomaly detection, supporting multiple modeling approaches. The interactive dashboard allows visualization of model performance across datasets.
 
-For more details, check out our report! 🚀
-
-## Output
-![image](https://github.com/user-attachments/assets/779c0130-1765-45c5-9920-2c5d6eddd899)
-
+For more details, check out our DOCX uploaded
 ## License
 This project is licensed under the **MIT License**.
 
