@@ -4,7 +4,8 @@ This repository contains experimental code to implement deep learning techniques
 
 The repository includes implementations of several neural networks (Autoencoder, Variational Autoencoder, Bidirectional GAN, Sequence Models) in TensorFlow 2.0, along with two other baselines (One-Class SVM, PCA).
 
-![Anomaly Detection](https://github.com/user-attachments/assets/c85acbd3-5101-4ff6-a9ae-39f8d48ce996)
+<img width="834" alt="image" src="https://github.com/user-attachments/assets/592514d7-5dbd-4371-8a0d-241de5710286" />
+
 
 ## Introduction
 
@@ -85,7 +86,8 @@ This script trains and evaluates the models. Steps:
 
 ## Summary of Results
 
-![Model Results](https://github.com/user-attachments/assets/629640f6-c274-4ba4-aed8-425430dcb4ab)
+<img width="834" alt="image" src="https://github.com/user-attachments/assets/805fe5c1-6704-494b-a44b-6ec2c83b2f2a" />
+
 
 Each model was evaluated using labeled test data, selecting an optimal threshold to maximize accuracy. We report:
 - **F1, F2 scores**
@@ -132,11 +134,8 @@ This repository provides a strong foundation for deep learning-based anomaly det
 
 For more details, check out our report! 🚀
 
-![Anomaly Visualization](https://github.com/user-attachments/assets/ad736b84-8dae-4437-ae93-619ffb04b82f)
-
 ## Output
-![image](https://github.com/user-attachments/assets/ddd39af9-9479-465b-9e47-b42c80d01f0a)
-
+![image](https://github.com/user-attachments/assets/779c0130-1765-45c5-9920-2c5d6eddd899)
 
 ## License
 This project is licensed under the **MIT License**.
