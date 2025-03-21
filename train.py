@@ -1,101 +1,210 @@
-from graphviz import Digraph
+# ###########################################################################
+#
+#  CLOUDERA APPLIED MACHINE LEARNING PROTOTYPE (AMP)
+#  (C) Cloudera, Inc. 2020
+#  All rights reserved.
+#
+#  Applicable Open Source License: Apache 2.0
+#
+#  NOTE: Cloudera open source products are modular software products 
+#  made up of hundreds of individual components, each of which was 
+#  individually copyrighted.  Each Cloudera open source product is a 
+#  collective work under U.S. Copyright Law. Your license to use the 
+#  collective work is as provided in your written agreement with  
+#  Cloudera.  Used apart from the collective work, this file is 
+#  licensed for your use pursuant to the open source license 
+#  identified above.
+#
+#  This code is provided to you pursuant a written agreement with
+#  (i) Cloudera, Inc. or (ii) a third-party authorized to distribute 
+#  this code. If you do not have a written agreement with Cloudera nor 
+#  with an authorized and properly licensed third party, you do not 
+#  have any rights to access nor to use this code.
+#
+#  Absent a written agreement with Cloudera, Inc. (“Cloudera”) to the
+#  contrary, A) CLOUDERA PROVIDES THIS CODE TO YOU WITHOUT WARRANTIES OF ANY
+#  KIND; (B) CLOUDERA DISCLAIMS ANY AND ALL EXPRESS AND IMPLIED 
+#  WARRANTIES WITH RESPECT TO THIS CODE, INCLUDING BUT NOT LIMITED TO 
+#  IMPLIED WARRANTIES OF TITLE, NON-INFRINGEMENT, MERCHANTABILITY AND 
+#  FITNESS FOR A PARTICULAR PURPOSE; (C) CLOUDERA IS NOT LIABLE TO YOU, 
+#  AND WILL NOT DEFEND, INDEMNIFY, NOR HOLD YOU HARMLESS FOR ANY CLAIMS 
+#  ARISING FROM OR RELATED TO THE CODE; AND (D)WITH RESPECT TO YOUR EXERCISE 
+#  OF ANY RIGHTS GRANTED TO YOU FOR THE CODE, CLOUDERA IS NOT LIABLE FOR ANY
+#  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE OR
+#  CONSEQUENTIAL DAMAGES INCLUDING, BUT NOT LIMITED TO, DAMAGES 
+#  RELATED TO LOST REVENUE, LOST PROFITS, LOSS OF INCOME, LOSS OF 
+#  BUSINESS ADVANTAGE OR UNAVAILABILITY, OR LOSS OR CORRUPTION OF
+#  DATA.
+#
+# ###########################################################################
 
-# Create a new directed graph
-flowchart = Digraph()
+import argparse
+from models.ae import AutoencoderModel
+from models.pca import PCAModel
+from models.ocsvm import SVMModel
+from models.vae import VAEModel
+from models.bigan import BiGANModel
+from models.seq2seq import Seq2SeqModel
+from utils import data_utils, eval_utils
+import numpy as np
 
-# Define nodes
-flowchart.node('A', 'Start')
-flowchart.node('B', 'Load Dataset')
-flowchart.node('C', 'Preprocess Data')
-flowchart.node('D', 'Split Data into Training and Testing Sets')
-flowchart.node('E', 'Select Deep Learning Model')
 
-# Define model workflows
-flowchart.node('E1', 'Autoencoder')
-flowchart.node('F1', 'Train Autoencoder')
-flowchart.node('G1', 'Evaluate Reconstruction Loss')
-flowchart.node('H1', 'Identify Anomalies (High Loss)')
-flowchart.node('I1', 'Generate Output Images (Histograms, Metrics, ROC)')
+import logging
+logging.basicConfig(level=logging.INFO)
 
-flowchart.node('E2', 'Variational Autoencoder')
-flowchart.node('F2', 'Train VAE')
-flowchart.node('G2', 'Evaluate Reconstruction Loss and KL Divergence')
-flowchart.node('H2', 'Identify Anomalies (High Loss)')
-flowchart.node('I2', 'Generate Output Images (Histograms, Metrics, ROC)')
 
-flowchart.node('E3', 'BiGAN')
-flowchart.node('F3', 'Train BiGAN')
-flowchart.node('G3', 'Evaluate Generative and Discriminative Loss')
-flowchart.node('H3', 'Identify Anomalies')
-flowchart.node('I3', 'Generate Output Images (Histograms, Metrics, ROC)')
+def train_pca():
+    num_features = 2
+    pca = PCAModel()
+    pca.train(in_train, in_test, num_features=num_features)
 
-flowchart.node('E4', 'Seq2Seq Model')
-flowchart.node('F4', 'Train Seq2Seq Model')
-flowchart.node('G4', 'Evaluate Prediction Errors')
-flowchart.node('H4', 'Identify Anomalies')
-flowchart.node('I4', 'Generate Output Images (Histograms, Metrics, ROC)')
+    inlier_scores = pca.compute_anomaly_score_unsupervised(in_test)
+    outlier_scores = pca.compute_anomaly_score_unsupervised(out_test)
+    print(inlier_scores)
+    print(outlier_scores)
+    metrics = eval_utils.evaluate_model(
+        inlier_scores, outlier_scores, model_name="pca", show_plot=False)
+    print(metrics)
+    return metrics
 
-flowchart.node('E5', 'One-Class SVM')
-flowchart.node('F5', 'Train One-Class SVM')
-flowchart.node('G5', 'Evaluate Support Vectors')
-flowchart.node('H5', 'Identify Anomalies')
-flowchart.node('I5', 'Generate Output Images (Histograms, Metrics, ROC)')
 
-flowchart.node('E6', 'LSTM')
-flowchart.node('F6', 'Train LSTM')
-flowchart.node('G6', 'Evaluate Prediction Errors')
-flowchart.node('H6', 'Identify Anomalies')
-flowchart.node('I6', 'Generate Output Images (Histograms, Metrics, ROC)')
+def train_svm():
+    svm_kwargs = {}
+    svm_kwargs["kernel"] = "rbf"
+    svm_kwargs["gamma"] = 0.5
+    svm_kwargs["outlier_frac"] = 0.0001
+    svm = SVMModel(**svm_kwargs)
+    svm.train(in_train, in_test)
 
-# Collect outputs
-flowchart.node('J', 'Collect Outputs for All Models')
-flowchart.node('K', 'Compare Model Performance')
-flowchart.node('L', 'End')
+    inlier_scores = svm.compute_anomaly_score(in_test)
+    outlier_scores = svm.compute_anomaly_score(out_test)
+    print(inlier_scores)
+    print(outlier_scores)
+    metrics = eval_utils.evaluate_model(
+        inlier_scores, outlier_scores, model_name="ocsvm", show_plot=False)
+    print(metrics)
+    return metrics
 
-# Define edges
-flowchart.edges(['AB', 'BC', 'CD', 'DE'])
-flowchart.edge('E', 'E1', label='Select Model')
-flowchart.edge('E', 'E2')
-flowchart.edge('E', 'E3')
-flowchart.edge('E', 'E4')
-flowchart.edge('E', 'E5')
-flowchart.edge('E', 'E6')
 
-# Model workflows
-flowchart.edge('E1', 'F1')
-flowchart.edge('F1', 'G1')
-flowchart.edge('G1', 'H1')
-flowchart.edge('H1', 'I1')
+def train_autoencoder():
+    # Instantiate and Train Autoencoder
+    ae_kwargs = {}
+    ae_kwargs["latent_dim"] = 2
+    ae_kwargs["hidden_dim"] = [15, 7]
+    ae_kwargs["epochs"] = 14
+    ae_kwargs["batch_size"] = 128
+    # ae_kwargs["model_path"] = ae_model_path
+    ae = AutoencoderModel(in_train.shape[1], **ae_kwargs)
+    ae.train(in_train, in_test)
+    ae.save_model()
 
-flowchart.edge('E2', 'F2')
-flowchart.edge('F2', 'G2')
-flowchart.edge('G2', 'H2')
-flowchart.edge('H2', 'I2')
+    inlier_scores = ae.compute_anomaly_score(in_test)
+    outlier_scores = ae.compute_anomaly_score(out_test)
+    print(inlier_scores)
+    print(outlier_scores)
+    metrics = eval_utils.evaluate_model(
+        inlier_scores, outlier_scores, model_name="ae", show_plot=False)
+    print(metrics)
+    return metrics
 
-flowchart.edge('E3', 'F3')
-flowchart.edge('F3', 'G3')
-flowchart.edge('G3', 'H3')
-flowchart.edge('H3', 'I3')
 
-flowchart.edge('E4', 'F4')
-flowchart.edge('F4', 'G4')
-flowchart.edge('G4', 'H4')
-flowchart.edge('H4', 'I4')
+def train_vae():
+    # Instantiate and Train Autoencoder
+    vae_kwargs = {}
+    vae_kwargs["latent_dim"] = 2
+    vae_kwargs["hidden_dim"] = [15, 7]
+    vae_kwargs["epochs"] = 8
+    vae_kwargs["batch_size"] = 128
+    # vae_kwargs["model_path"] = ae_model_path
+    vae = VAEModel(in_train.shape[1], **vae_kwargs)
+    vae.train(in_train, in_test)
+    vae.save_model()
 
-flowchart.edge('E5', 'F5')
-flowchart.edge('F5', 'G5')
-flowchart.edge('G5', 'H5')
-flowchart.edge('H5', 'I5')
+    inlier_scores = vae.compute_anomaly_score(in_test)
+    outlier_scores = vae.compute_anomaly_score(out_test)
+    print(inlier_scores)
+    print(outlier_scores)
+    metrics = eval_utils.evaluate_model(
+        inlier_scores, outlier_scores, model_name="vae", show_plot=False)
+    print(metrics)
+    return metrics
 
-flowchart.edge('E6', 'F6')
-flowchart.edge('F6', 'G6')
-flowchart.edge('G6', 'H6')
-flowchart.edge('H6', 'I6')
 
-# Collect outputs and compare
-flowchart.edges(['I1J', 'I2J', 'I3J', 'I4J', 'I5J', 'I6J'])
-flowchart.edge('J', 'K')
-flowchart.edge('K', 'L')
+def train_bigan():
+    bigan_kwargs = {}
+    bigan_kwargs["latent_dim"] = 2
+    bigan_kwargs["dense_dim"] = 128
+    bigan_kwargs["epochs"] = 15
+    bigan_kwargs["batch_size"] = 256
+    bigan_kwargs["learning_rate"] = 0.01
+    input_shape = (in_train.shape[1], )
+    bigan = BiGANModel(input_shape, **bigan_kwargs)
+    bigan.train(in_train, in_test)
+    bigan.save_model()
+    inlier_scores = bigan.compute_anomaly_score(in_test)
+    outlier_scores = bigan.compute_anomaly_score(out_test)
+    print(inlier_scores)
+    print(outlier_scores)
+    metrics = eval_utils.evaluate_model(
+        inlier_scores, outlier_scores, model_name="bigan", show_plot=False)
+    print(metrics)
+    return metrics
 
-# Render the flowchart to a file and display it
-flowchart.render('anomaly_detection_flowchart', format='png', cleanup=True)
+
+def train_seq2seq():
+    # seq2seq models require a dim 3 input matrix (rows, timesteps, num_features )
+    in_train_x, in_test_x, out_test_x = np.expand_dims(
+        in_train, axis=2), np.expand_dims(in_test, axis=2),  np.expand_dims(out_test, axis=2)
+
+    seq2seq_kwargs = {}
+    seq2seq_kwargs["encoder_dim"] = [10]
+    seq2seq_kwargs["decoder_dim"] = [20]
+    seq2seq_kwargs["epochs"] = 40
+    seq2seq_kwargs["batch_size"] = 256
+    seq2seq_kwargs["learning_rate"] = 0.01
+    n_features = 1  # single value per feature
+    seq2seq = Seq2SeqModel(n_features, **seq2seq_kwargs)
+    seq2seq.train(in_train_x, in_test_x)
+    seq2seq.save_model()
+
+    # seq2seq.load_model()
+    inlier_scores = seq2seq.compute_anomaly_score(
+        in_test_x[np.random.randint(100, size=400), :])
+    outlier_scores = seq2seq.compute_anomaly_score(
+        out_test_x[np.random.randint(100, size=80), :])
+
+    print(inlier_scores[:5])
+    print(outlier_scores[:5])
+    metrics = eval_utils.evaluate_model(
+        inlier_scores, outlier_scores, model_name="seq2seq", show_plot=False)
+    print(metrics)
+    return metrics
+
+
+def train_all():
+    train_autoencoder()
+    train_pca()
+    train_vae()
+    train_svm()
+    train_bigan()
+    train_seq2seq()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Process train parameters')
+    parser.add_argument('-m', '--model', dest='model', type=str,
+                        choices=["ae", "vae", "seq2seq", "gan", "all"],
+                        help='model type to train', default="ae")
+    # parser.add_argument('--epochs', dest='accumulate', action='store_const',
+    #                     const=sum, default=max,
+    #                     help='sum the integers (default: find the max)')
+
+    args, unknown = parser.parse_known_args()
+
+    test_data_partition = "8020"
+    in_train, out_train, scaler, _ = data_utils.load_kdd(
+        data_path="data/kdd/", dataset_type="train", partition=test_data_partition)
+    in_test, out_test, _, _ = data_utils.load_kdd(
+        data_path="data/kdd/", dataset_type="test", partition=test_data_partition, scaler=scaler)
+
+    train_autoencoder()
